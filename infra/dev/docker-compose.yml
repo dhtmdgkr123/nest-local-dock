@@ -1,0 +1,54 @@
+version: '3.8'
+
+networks:
+    backend:
+        driver: bridge
+
+services:
+
+    ###### NODE ######
+    app:
+        build: 
+            args:
+                - codePathContainer=${APP_CODE_PATH_CONTAINER}
+                - nodeVersion=${NODE_VERSION}
+            context: ./node
+            dockerfile: Dockerfile
+        volumes: 
+            - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}
+        networks: 
+            - backend
+        ports: 
+            - ${DEV_SERVER_PORT}:${DEV_SERVER_PORT}
+        depends_on: 
+            - mariadb
+            - redis
+    
+    ###### REDIS ######
+    redis:
+        build: 
+            context: ./redis
+            dockerfile: Dockerfile
+        volumes: 
+            - ${DATA_PATH_HOST}/redis:/data
+        ports: 
+            - ${REDIS_PORT}:6379
+        networks: 
+            - backend
+
+    ###### DB ######
+    mariadb:
+        build: 
+            context: ./mariadb
+            dockerfile: Dockerfile
+        volumes: 
+            - ${DATA_PATH_HOST}/db:/var/lib/mysql
+        ports:
+            - ${MARIA_DB_PORT}:3306
+        environment:
+            - TZ=${MARIA_DB_TZ}
+            - MYSQL_USER=${MARIA_DB_USER}
+            - MYSQL_PASSWORD=${MARIA_DB_PASSWORD}
+            - MYSQL_ROOT_PASSWORD=${MARIA_DB_ROOT_PASSWORD}
+        networks:
+            - backend
